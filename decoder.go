@@ -424,7 +424,8 @@ func (d *Decoder) readAttrValue() (string, byte) {
 		case gloExt0, gloExt1, gloExt2,
 			gloExtI0, gloExtI1, gloExtI2,
 			gloExtT0, gloExtT1, gloExtT2:
-			panic(fmt.Errorf("extension token unimplemented (token %d)", b))
+			d.extData(&cdata, b)
+			break
 		case gloEnd:
 			return string(cdata), b
 		default:
@@ -459,7 +460,8 @@ func (d *Decoder) content() {
 		case gloExt0, gloExt1, gloExt2,
 			gloExtI0, gloExtI1, gloExtI2,
 			gloExtT0, gloExtT1, gloExtT2:
-			panic(fmt.Errorf("extension token unimplemented (token %d)", b))
+			d.extData(&cdata, b)
+			break
 		case gloEnd:
 			d.sendCharData(&cdata)
 			return
@@ -503,5 +505,33 @@ func (d *Decoder) charData(cdata *CharData, b byte) {
 		}
 	default:
 		d.panicErr(fmt.Errorf("Unknown char data tag %d", b))
+	}
+}
+
+func (d *Decoder) extData(cdata *CharData, b byte) {
+	if cdata == nil {
+		*cdata = make([]byte, 0)
+	}
+	switch b {
+	case gloExtI0, gloExtI1, gloExtI2:
+		//Inline string document-type-specific extension token. Token is followed by a termstr.
+		str, err := readString(d)
+		d.panicErr(err)
+		*cdata = append(*cdata, str...)
+	case gloExtT0, gloExtT1, gloExtT2:
+		//Inline integer document-type-specific extension token. Token is followed by a mb_uint_32.
+		index, err := mbUint32(d)
+		d.panicErr(err)
+		str, err := d.GetString(index)
+		d.panicErr(err)
+		*cdata = append(*cdata, str...)
+	case gloExt0, gloExt1, gloExt2:
+		//Single-byte document-type-specific extension token.
+		byte, err := readByte(d)
+		d.panicErr(err)
+		str := fmt.Sprintf("%d",byte)
+		*cdata = append(*cdata, str...)
+	default:
+		d.panicErr(fmt.Errorf("Unknown ext data tag %d", b))
 	}
 }
