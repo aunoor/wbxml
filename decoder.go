@@ -522,8 +522,7 @@ func (d *Decoder) extData(cdata *CharData, b byte) {
 		//Inline integer document-type-specific extension token. Token is followed by a mb_uint_32.
 		index, err := mbUint32(d)
 		d.panicErr(err)
-		str, err := d.GetString(index)
-		d.panicErr(err)
+		str := fmt.Sprintf("%d", index)
 		*cdata = append(*cdata, str...)
 	case gloExt0, gloExt1, gloExt2:
 		//Single-byte document-type-specific extension token.
