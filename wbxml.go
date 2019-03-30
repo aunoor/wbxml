@@ -80,6 +80,9 @@ func (space CodeSpace) Name(pageID byte, code byte) (string, error) {
 // CodePage represents a mapping between code and tag/attribute.
 type CodePage map[byte]string
 
+// ExtTable represents a mapping between code and external string table.
+type ExtTable map[uint32]string
+
 // Token is an interface holding one of the token types:
 // StartElement, EndElement, CharData, Entity, Opaque, ProcInst.
 type Token interface{}

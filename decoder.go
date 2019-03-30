@@ -23,6 +23,7 @@ type Decoder struct {
 	tags     CodeSpace
 	attrPage byte
 	attrs    CodeSpace
+	exttable ExtTable
 
 	offset  int
 	tokChan chan Token
@@ -31,12 +32,13 @@ type Decoder struct {
 }
 
 // NewDecoder instantiate a Decoder, with r as a stream of WBXML.
-func NewDecoder(r io.Reader, tags CodeSpace, attrs CodeSpace) *Decoder {
+func NewDecoder(r io.Reader, tags CodeSpace, attrs CodeSpace, exttable ExtTable) *Decoder {
 	d := &Decoder{
 		r: r,
 
 		tags:    tags,
 		attrs:   attrs,
+		exttable: exttable,
 		tokChan: make(chan Token),
 	}
 
@@ -522,7 +524,12 @@ func (d *Decoder) extData(cdata *CharData, b byte) {
 		//Inline integer document-type-specific extension token. Token is followed by a mb_uint_32.
 		index, err := mbUint32(d)
 		d.panicErr(err)
-		str := fmt.Sprintf("%d", index)
+		var str string
+		if val, ok := d.exttable[index]; ok {
+			str = val
+		} else {
+			str=fmt.Sprintf("%d", index)
+		}
 		*cdata = append(*cdata, str...)
 	case gloExt0, gloExt1, gloExt2:
 		//Single-byte document-type-specific extension token.
