@@ -136,7 +136,7 @@ func TestEncoderEncode(t *testing.T) {
 	}
 
 	if !assert.Equal(t, syncMLInput, w.Bytes()) {
-		XML(os.Stdout, NewDecoder(w, syncMLTags, CodeSpace{}), " ")
+		XML(os.Stdout, NewDecoder(w, syncMLTags, CodeSpace{}, ExtTable{}), " ")
 	}
 }
 
@@ -217,6 +217,6 @@ func TestEncoderEncodeWithMarshalWBXML(t *testing.T) {
 	}
 
 	if !assert.Equal(t, syncMLInput, w.Bytes()) {
-		XML(os.Stdout, NewDecoder(w, syncMLTags, CodeSpace{}), " ")
+		XML(os.Stdout, NewDecoder(w, syncMLTags, CodeSpace{}, ExtTable{}), " ")
 	}
 }

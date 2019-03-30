@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
+	"testing"
 )
 
 var syncMLTags = CodeSpace{
@@ -106,7 +108,7 @@ func ExampleXML() {
 		panic(err)
 	}
 	r := bytes.NewReader(data)
-	d := NewDecoder(r, syncMLTags, CodeSpace{})
+	d := NewDecoder(r, syncMLTags, CodeSpace{}, ExtTable{})
 	w := bytes.NewBuffer(nil)
 
 	err = XML(w, d, "  ")
@@ -144,4 +146,29 @@ func ExampleXML() {
 	//     <Final></Final>
 	//   </SyncBody>
 	// </SyncML>
+}
+
+func TestOpaqueData(t *testing.T) {
+	input := "0101030047C30301020301"
+
+	tags := CodeSpace{
+		0: CodePage{
+			7: "XYZ",
+		},
+	}
+
+	data, err := hex.DecodeString(input)
+	if err != nil {
+		panic(err)
+	}
+	r := bytes.NewReader(data)
+	d := NewDecoder(r, tags, CodeSpace{}, ExtTable{})
+	w := bytes.NewBuffer(nil)
+
+	err = XML(w, d, "  ")
+	if err != nil && err != io.EOF {
+		panic(err)
+	}
+	//fmt.Fprintf(os.Stdout, w.String())
+	assert.Equal(t, "<XYZ>010203</XYZ>", w.String())
 }

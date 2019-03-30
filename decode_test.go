@@ -19,6 +19,8 @@ var decodingExamples = [][]byte{
 		0x86, 0x08, 0x03, 'x', 'y', 'z', 0x00, 0x85, 0x03, '/', 's', 0x00, 0x01, 0x83, 0x04,
 		0x86, 0x06, 0x0A, 0x03, 'N', 0x00, 0x01, 0x01, 0x01,
 	},
+	[]byte{
+		0x01, 0x01, 0x03, 0x00, 0x47, 0xC3, 0x03, 0x01, 0x02, 0x03, 0x01},
 }
 
 var encodingExamples = [][]byte{
@@ -30,6 +32,8 @@ var encodingExamples = [][]byte{
 		0x86, 0x08, 0x03, 'x', 'y', 'z', '.', 'o', 'r', 'g', '/', 's', 0x00, 0x01, 0x83, 0x04,
 		0x86, 0x06, 0x0A, 0x03, 'N', 0x00, 0x01, 0x01, 0x01,
 	},
+	[]byte{
+		0x01, 0x01, 0x03, 0x00, 0x47, 0xC3, 0x03, 0x01, 0x02, 0x03, 0x01},
 }
 
 var headerExamples = []Header{
@@ -43,6 +47,11 @@ var headerExamples = []Header{
 		PublicID:    1,
 		Charset:     106,
 		StringTable: []byte{'a', 'b', 'c', 00, ' ', 'E', 'n', 't', 'e', 'r', ' ', 'n', 'a', 'm', 'e', ':', ' ', 00},
+	},
+	Header{
+		Version:  1,
+		PublicID: 1,
+		Charset:  3,
 	},
 }
 
@@ -80,37 +89,49 @@ var tagSpaceExamples = []struct {
 			},
 		},
 	},
+	{
+		tags: CodeSpace{
+			0: CodePage{
+				7: "XYZ",
+			},
+		},
+		attrs: CodeSpace{
+		},
+	},
 }
 
 var tokensExamples = [][]Token{
 	[]Token{
-		StartElement{Name: "XYZ", Content: true},
-		StartElement{Name: "CARD", Content: true},
+		StartElement{Name: "XYZ", Content: true, Offset:4},
+		StartElement{Name: "CARD", Content: true, Offset:5},
 		CharData(" X & Y"),
-		StartElement{Name: "BR"},
-		EndElement{Name: "BR"},
+		StartElement{Name: "BR", Offset:14},
+		EndElement{Name: "BR", Offset:15},
 		CharData(" X\u00A0=\u00A01 "),
-		EndElement{Name: "CARD"},
-		EndElement{Name: "XYZ"},
+		EndElement{Name: "CARD", Offset:27},
+		EndElement{Name: "XYZ", Offset:28},
 		nil,
 	},
 	[]Token{
-		StartElement{Name: "XYZ", Content: true},
+		StartElement{Name: "XYZ", Content: true, Offset:22},
 		StartElement{
 			Name:    "CARD",
 			Content: true,
 			Attr: []Attr{
 				Attr{"NAME", "abc"},
 				Attr{"STYLE", ""},
-			}},
+			},
+			Offset:28,
+		},
 		StartElement{
 			Name: "DO",
 			Attr: []Attr{
 				Attr{"TYPE", "ACCEPT"},
 				Attr{"URL", "xyz.org/s"},
 			},
+			Offset:43,
 		},
-		EndElement{Name: "DO"},
+		EndElement{Name: "DO", Offset:44},
 		CharData(" Enter name: "),
 		StartElement{
 			Name: "INPUT",
@@ -118,10 +139,17 @@ var tokensExamples = [][]Token{
 				Attr{"TYPE", ""},
 				Attr{"KEY", "N"},
 			},
+			Offset:52,
 		},
-		EndElement{Name: "INPUT"},
-		EndElement{Name: "CARD"},
-		EndElement{Name: "XYZ"},
+		EndElement{Name: "INPUT", Offset:53},
+		EndElement{Name: "CARD", Offset:54},
+		EndElement{Name: "XYZ", Offset:55},
+		nil,
+	},
+	[]Token{
+		StartElement{Name: "XYZ", Content: true, Offset:4},
+		Opaque([]byte{0x1,0x2,0x3}),
+		EndElement{Name: "XYZ", Offset:11},
 		nil,
 	},
 }
@@ -132,7 +160,7 @@ func TestDecoderToken(t *testing.T) {
 		space := tagSpaceExamples[testID]
 
 		r := bytes.NewReader(input)
-		d := NewDecoder(r, space.tags, space.attrs)
+		d := NewDecoder(r, space.tags, space.attrs, ExtTable{})
 
 		result := make([]Token, 0, len(expected))
 		var err error
@@ -216,7 +244,7 @@ func TestDecoderDecode(t *testing.T) {
 	}
 
 	r := bytes.NewReader(syncMLInput)
-	d := NewDecoder(r, syncMLTags, CodeSpace{})
+	d := NewDecoder(r, syncMLTags, CodeSpace{}, ExtTable{})
 	var m msg
 	err := d.Decode(&m)
 
@@ -303,7 +331,7 @@ func TestDecoderDecodeWithUnmarshalWBXML(t *testing.T) {
 	}
 
 	r := bytes.NewReader(syncMLInput)
-	d := NewDecoder(r, syncMLTags, CodeSpace{})
+	d := NewDecoder(r, syncMLTags, CodeSpace{}, ExtTable{})
 
 	var m msg2
 	err := d.Decode(&m)
@@ -358,7 +386,7 @@ func TestDecoderDecodeWithSlice(t *testing.T) {
 	}
 
 	r := bytes.NewReader(syncMLInput)
-	d := NewDecoder(r, syncMLTags, CodeSpace{})
+	d := NewDecoder(r, syncMLTags, CodeSpace{}, ExtTable{})
 
 	var m msg3
 	err := d.Decode(&m)
@@ -398,7 +426,7 @@ func TestDecoderDecodeWithPointer(t *testing.T) {
 		panic(err)
 	}
 	r := bytes.NewReader(data)
-	d := NewDecoder(r, syncMLTags, CodeSpace{})
+	d := NewDecoder(r, syncMLTags, CodeSpace{}, ExtTable{})
 
 	var m msg4
 	err = d.Decode(&m)
