@@ -35,7 +35,7 @@ func TestEncoderEncodeTag(t *testing.T) {
 	for testID, test := range tests {
 		buf := bytes.NewBuffer(nil)
 		{
-			e := NewEncoder(buf, syncMLTags, CodeSpace{0: CodePage{5: "A"}})
+			e := NewEncoder(buf, syncMLTags, AttrCodeSpace{0: AttrPage{5: {"A", ""}}})
 			err := e.encodeTag(test.tag)
 			if err != nil {
 				t.Errorf("case %d: unexpected error: %s", testID, err)
@@ -120,7 +120,7 @@ func TestEncoderEncode(t *testing.T) {
 	}
 
 	w := bytes.NewBuffer(nil)
-	d := NewEncoder(w, syncMLTags, CodeSpace{})
+	d := NewEncoder(w, syncMLTags, AttrCodeSpace{})
 	err := d.EncodeHeader(Header{
 		Version:     3,
 		PublicID:    0,
@@ -136,7 +136,7 @@ func TestEncoderEncode(t *testing.T) {
 	}
 
 	if !assert.Equal(t, syncMLInput, w.Bytes()) {
-		XML(os.Stdout, NewDecoder(w, syncMLTags, CodeSpace{}, ExtTable{}), " ")
+		XML(os.Stdout, NewDecoder(w, syncMLTags, AttrCodeSpace{}, ExtTable{}), " ")
 	}
 }
 
@@ -201,7 +201,7 @@ func TestEncoderEncodeWithMarshalWBXML(t *testing.T) {
 	}
 
 	w := bytes.NewBuffer(nil)
-	d := NewEncoder(w, syncMLTags, CodeSpace{})
+	d := NewEncoder(w, syncMLTags, AttrCodeSpace{})
 	err := d.EncodeHeader(Header{
 		Version:     3,
 		PublicID:    0,
@@ -217,6 +217,6 @@ func TestEncoderEncodeWithMarshalWBXML(t *testing.T) {
 	}
 
 	if !assert.Equal(t, syncMLInput, w.Bytes()) {
-		XML(os.Stdout, NewDecoder(w, syncMLTags, CodeSpace{}, ExtTable{}), " ")
+		XML(os.Stdout, NewDecoder(w, syncMLTags, AttrCodeSpace{}, ExtTable{}), " ")
 	}
 }

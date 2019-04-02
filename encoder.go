@@ -22,7 +22,7 @@ type Encoder struct {
 	tagPage  byte
 	tags     CodeSpace
 	attrPage byte
-	attrs    CodeSpace
+	attrs    AttrCodeSpace
 
 	offset    int
 	tokChan   chan Token
@@ -32,7 +32,7 @@ type Encoder struct {
 }
 
 // NewEncoder instantiates an Encoder, writting WBXML to w.
-func NewEncoder(w io.Writer, tags CodeSpace, attrs CodeSpace) *Encoder {
+func NewEncoder(w io.Writer, tags CodeSpace, attrs AttrCodeSpace) *Encoder {
 	e := &Encoder{
 		w:         w,
 		tags:      tags,
@@ -255,7 +255,7 @@ func (e *Encoder) tag(tag string) (byte, byte, error) {
 }
 
 func (e *Encoder) attribute(tag string) (byte, byte, error) {
-	return findCodePage(e.attrs, tag)
+	return findAttrCodePage(e.attrs, tag)
 }
 
 // findCodePage return the a code, page or and error.
@@ -264,6 +264,17 @@ func findCodePage(space CodeSpace, tag string) (byte, byte, error) {
 	for page, p := range space {
 		for code, name := range p {
 			if name == tag {
+				return code, page, nil
+			}
+		}
+	}
+	return 0, 0, fmt.Errorf("unknown tag %s", tag)
+}
+
+func findAttrCodePage(space AttrCodeSpace, tag string) (byte, byte, error) {
+	for page, p := range space {
+		for code, desc := range p {
+			if desc.Name == tag {
 				return code, page, nil
 			}
 		}

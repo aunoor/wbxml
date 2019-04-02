@@ -83,6 +83,42 @@ type CodePage map[byte]string
 // ExtTable represents a mapping between code and external string table.
 type ExtTable map[uint32]string
 
+// AttrCodeSpace represents the mapping of an attribute to its code, organized in pages
+// of overlapping code to attribute mapping.
+type AttrCodeSpace map[byte]AttrPage
+
+type AttrPage map[byte]AttrDesc
+
+// AttrDesc represent a description of attribute
+type AttrDesc struct {
+	Name        string
+	ValuePrefix string
+}
+
+func (space AttrCodeSpace) Name(pageID byte, code byte) (string, error) {
+	page, ok := space[pageID]
+	if !ok {
+		return "", fmt.Errorf("Unknown page %d", pageID)
+	}
+	attrDesc, ok := page[code]
+	if !ok {
+		return "", fmt.Errorf("Unknown code %d in page %d", code, pageID)
+	}
+	return attrDesc.Name, nil
+}
+
+func (space AttrCodeSpace) ValuePrefix(pageID byte, code byte) (string, error) {
+	page, ok := space[pageID]
+	if !ok {
+		return "", fmt.Errorf("Unknown page %d", pageID)
+	}
+	attrDesc, ok := page[code]
+	if !ok {
+		return "", fmt.Errorf("Unknown code %d in page %d", code, pageID)
+	}
+	return attrDesc.ValuePrefix, nil
+}
+
 // Token is an interface holding one of the token types:
 // StartElement, EndElement, CharData, Entity, Opaque, ProcInst.
 type Token interface{}

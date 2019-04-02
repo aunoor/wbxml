@@ -108,7 +108,7 @@ func ExampleXML() {
 		panic(err)
 	}
 	r := bytes.NewReader(data)
-	d := NewDecoder(r, syncMLTags, CodeSpace{}, ExtTable{})
+	d := NewDecoder(r, syncMLTags, AttrCodeSpace{}, ExtTable{})
 	w := bytes.NewBuffer(nil)
 
 	err = XML(w, d, "  ")
@@ -162,7 +162,7 @@ func TestOpaqueData(t *testing.T) {
 		panic(err)
 	}
 	r := bytes.NewReader(data)
-	d := NewDecoder(r, tags, CodeSpace{}, ExtTable{})
+	d := NewDecoder(r, tags, AttrCodeSpace{}, ExtTable{})
 	w := bytes.NewBuffer(nil)
 
 	err = XML(w, d, "  ")

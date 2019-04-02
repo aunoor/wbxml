@@ -22,7 +22,7 @@ type Decoder struct {
 	tagPage  byte
 	tags     CodeSpace
 	attrPage byte
-	attrs    CodeSpace
+	attrs    AttrCodeSpace
 	exttable ExtTable
 
 	offset  int
@@ -32,14 +32,14 @@ type Decoder struct {
 }
 
 // NewDecoder instantiate a Decoder, with r as a stream of WBXML.
-func NewDecoder(r io.Reader, tags CodeSpace, attrs CodeSpace, exttable ExtTable) *Decoder {
+func NewDecoder(r io.Reader, tags CodeSpace, attrs AttrCodeSpace, exttable ExtTable) *Decoder {
 	d := &Decoder{
 		r: r,
 
-		tags:    tags,
-		attrs:   attrs,
+		tags:     tags,
+		attrs:    attrs,
 		exttable: exttable,
-		tokChan: make(chan Token),
+		tokChan:  make(chan Token),
 	}
 
 	go d.run()
@@ -268,6 +268,14 @@ func (d *Decoder) attrName(code byte) string {
 	return name
 }
 
+func (d *Decoder) attrValuePrefix(code byte) string {
+	name, err := d.attrs.ValuePrefix(d.attrPage, code)
+	if err != nil {
+		d.panicErr(err)
+	}
+	return name
+}
+
 func (d *Decoder) run() {
 	defer func() {
 		if r := recover(); r != nil {
@@ -404,7 +412,9 @@ func (d *Decoder) attributes(elt *StartElement) {
 			}
 			var attr Attr
 			attr.Name = d.attrName(b)
+			valuePrefix := d.attrValuePrefix(b)
 			attr.Value, b = d.readAttrValue()
+			attr.Value = valuePrefix + attr.Value
 			elt.Attr = append(elt.Attr, attr)
 		}
 	}
@@ -528,14 +538,14 @@ func (d *Decoder) extData(cdata *CharData, b byte) {
 		if val, ok := d.exttable[index]; ok {
 			str = val
 		} else {
-			str=fmt.Sprintf("%d", index)
+			str = fmt.Sprintf("%d", index)
 		}
 		*cdata = append(*cdata, str...)
 	case gloExt0, gloExt1, gloExt2:
 		//Single-byte document-type-specific extension token.
-		byte, err := readByte(d)
+		rbyte, err := readByte(d)
 		d.panicErr(err)
-		str := fmt.Sprintf("%d",byte)
+		str := fmt.Sprintf("%d", rbyte)
 		*cdata = append(*cdata, str...)
 	default:
 		d.panicErr(fmt.Errorf("Unknown ext data tag %d", b))
